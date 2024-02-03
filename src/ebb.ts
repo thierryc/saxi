@@ -26,11 +26,12 @@ export class EBB {
     this.port = port;
     this.writer = this.port.writable.getWriter();
     this.commandQueue = [];
-    this.readableClosed = port.readable
+    this.readableClosed = this.port.readable
       .pipeThrough(new RegexParser({ regex: /[\r\n]+/ }))
       .pipeTo(new WritableStream({
         write: (chunk) => {
           if (/^[\r\n]*$/.test(chunk)) return
+          // console.log(`readable: ${chunk.toString("ascii")}`)
           if (this.commandQueue.length) {
             if (chunk[0] === "!".charCodeAt(0)) {
               (this.commandQueue.shift() as any).reject(new Error(chunk.toString("ascii")));
@@ -73,6 +74,7 @@ export class EBB {
     if (process.env.DEBUG_SAXI_COMMANDS) {
       console.log(`writing: ${str}`)
     }
+    console.log(`writing: ${str}`)
     const encoder = new TextEncoder()
     return this.writer.write(encoder.encode(str))
   }
