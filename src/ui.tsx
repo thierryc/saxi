@@ -4,11 +4,11 @@ import { createRoot } from 'react-dom/client';
 import interpolator from "color-interpolate"
 import colormap from "colormap"
 
-import {flattenSVG} from "flatten-svg";
-import {PaperSize} from "./paper-size";
-import {Device, Plan, PlanOptions, defaultPlanOptions, XYMotion, PenMotion} from "./planning";
-import {formatDuration} from "./util";
-import {Vec2} from "./vec";
+import { flattenSVG } from "flatten-svg";
+import { PaperSize } from "./paper-size";
+import { Device, Plan, PlanOptions, defaultPlanOptions, XYMotion, PenMotion, DrawingDevice } from "./planning";
+import { formatDuration } from "./util";
+import { Vec2 } from "./vec";
 
 import PlanWorker from "./plan.worker";
 
@@ -49,7 +49,7 @@ const initialState = {
 
 // Update the initial state with previously persisted settings (if present)
 const persistedPlanOptions = JSON.parse(window.localStorage.getItem("planOptions")) || {};
-initialState.planOptions = {...initialState.planOptions, ...persistedPlanOptions};
+initialState.planOptions = { ...initialState.planOptions, ...persistedPlanOptions };
 initialState.planOptions.paperSize = new PaperSize(initialState.planOptions.paperSize.size);
 
 type State = typeof initialState;
@@ -59,21 +59,21 @@ const DispatchContext = React.createContext(null);
 function reducer(state: State, action: any): State {
   switch (action.type) {
     case "SET_PLAN_OPTION":
-      return {...state, planOptions: {...state.planOptions, ...action.value}};
+      return { ...state, planOptions: { ...state.planOptions, ...action.value } };
     case "SET_VISUALIZATION_OPTION":
-      return {...state, visualizationOptions: {...state.visualizationOptions, ...action.value}};
+      return { ...state, visualizationOptions: { ...state.visualizationOptions, ...action.value } };
     case "SET_DEVICE_INFO":
-      return {...state, deviceInfo: action.value};
+      return { ...state, deviceInfo: action.value };
     case "SET_PAUSED":
-      return {...state, paused: action.value};
+      return { ...state, paused: action.value };
     case "SET_PATHS":
       // eslint-disable-next-line no-case-declarations
-      const {paths, strokeLayers, selectedStrokeLayers, groupLayers, selectedGroupLayers, layerMode} = action;
-      return {...state, paths, groupLayers, strokeLayers, planOptions: {...state.planOptions, selectedStrokeLayers, selectedGroupLayers, layerMode}};
+      const { paths, strokeLayers, selectedStrokeLayers, groupLayers, selectedGroupLayers, layerMode } = action;
+      return { ...state, paths, groupLayers, strokeLayers, planOptions: { ...state.planOptions, selectedStrokeLayers, selectedGroupLayers, layerMode } };
     case "SET_PROGRESS":
-      return {...state, progress: action.motionIdx};
+      return { ...state, progress: action.motionIdx };
     case "SET_CONNECTED":
-      return {...state, connected: action.connected};
+      return { ...state, connected: action.connected };
     default:
       console.warn(`Unrecognized action type '${action.type}'`);
       return state;
@@ -308,7 +308,7 @@ class SaxiDriver implements Driver {
     fetch("/plot", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: new Blob([ JSON.stringify(plan.serialize()) ], { type: 'application/json' })
+      body: new Blob([JSON.stringify(plan.serialize())], { type: 'application/json' })
     });
   }
 
@@ -332,7 +332,7 @@ class SaxiDriver implements Driver {
   }
 
   public setPenHeight(height: number, rate: number) {
-    this.send({ c: "setPenHeight", p: {height, rate} });
+    this.send({ c: "setPenHeight", p: { height, rate } });
   }
 
   public limp() { this.send({ c: "limp" }); }
@@ -356,8 +356,9 @@ const usePlan = (paths: Vec2[][] | null, planOptions: PlanOptions) => {
     if (serialize(previousOptions) === serialize(newOptionsWithOldPenHeights)) {
       // The existing plan should be the same except for penup/pendown heights.
       return previousPlan.withPenHeights(
-        Device.Axidraw.penPctToPos(newOptions.penUpHeight),
-        Device.Axidraw.penPctToPos(newOptions.penDownHeight)
+        Device[newOptions.deviceName].penPctToPos(newOptions.penUpHeight),
+        Device[newOptions.deviceName].penPctToPos(newOptions.penDownHeight),
+        newOptions
       );
     }
   }
@@ -383,7 +384,7 @@ const usePlan = (paths: Vec2[][] | null, planOptions: PlanOptions) => {
     const worker = new (PlanWorker as any)();
     setIsPlanning(true);
     console.time("posting to worker");
-    worker.postMessage({paths, planOptions});
+    worker.postMessage({ paths, planOptions });
     console.timeEnd("posting to worker");
     const listener = (m: any) => {
       console.time("deserializing");
@@ -415,14 +416,14 @@ const setPaths = (paths: Vec2[][]) => {
   const layerMode = groups.size > 1 ? 'group' : 'stroke'
   const groupLayers = Array.from(groups).sort()
   const strokeLayers = Array.from(strokes).sort()
-  return {type: "SET_PATHS", paths, groupLayers, strokeLayers, selectedGroupLayers: new Set(groupLayers), selectedStrokeLayers: new Set(strokeLayers), layerMode};
+  return { type: "SET_PATHS", paths, groupLayers, strokeLayers, selectedGroupLayers: new Set(groupLayers), selectedStrokeLayers: new Set(strokeLayers), layerMode };
 };
 
-function PenHeight({state, driver}: {state: State; driver: Driver}) {
-  const {penUpHeight, penDownHeight} = state.planOptions;
+function PenHeight({ state, driver }: { state: State; driver: Driver }) {
+  const { penUpHeight, penDownHeight } = state.planOptions;
   const dispatch = useContext(DispatchContext);
-  const setPenUpHeight = (x: number) => dispatch({type: "SET_PLAN_OPTION", value: {penUpHeight: x}});
-  const setPenDownHeight = (x: number) => dispatch({type: "SET_PLAN_OPTION", value: {penDownHeight: x}});
+  const setPenUpHeight = (x: number) => dispatch({ type: "SET_PLAN_OPTION", value: { penUpHeight: x } });
+  const setPenDownHeight = (x: number) => dispatch({ type: "SET_PLAN_OPTION", value: { penDownHeight: x } });
   const penUp = () => {
     const height = Device.Axidraw.penPctToPos(penUpHeight);
     driver.setPenHeight(height, 1000);
@@ -455,7 +456,7 @@ function PenHeight({state, driver}: {state: State; driver: Driver}) {
   </Fragment>;
 }
 
-function VisualizationOptions({state}: {state: State}) {
+function VisualizationOptions({ state }: { state: State }) {
   const dispatch = useContext(DispatchContext);
 
   return <>
@@ -467,14 +468,14 @@ function VisualizationOptions({state}: {state: State}) {
         min="0"
         max="10"
         step="0.1"
-        onChange={(e) => dispatch({type: "SET_VISUALIZATION_OPTION", value: {penStrokeWidth: Number(e.target.value)}})}
+        onChange={(e) => dispatch({ type: "SET_VISUALIZATION_OPTION", value: { penStrokeWidth: Number(e.target.value) } })}
       />
     </label>
     <label className="flex-checkbox" title="Color paths in the preview based on the order in which they will be plotted. Yellow is first, pink is last.">
       <input
         type="checkbox"
         checked={state.visualizationOptions.colorPathsByStrokeOrder}
-        onChange={(e) => dispatch({type: "SET_VISUALIZATION_OPTION", value: {colorPathsByStrokeOrder: !!e.target.checked}})}
+        onChange={(e) => dispatch({ type: "SET_VISUALIZATION_OPTION", value: { colorPathsByStrokeOrder: !!e.target.checked } })}
       />
       color based on order
     </label>
@@ -497,25 +498,27 @@ function SwapPaperSizesButton({ onClick }: { onClick: () => void }) {
   </svg>;
 }
 
-function PaperConfig({state}: {state: State}) {
+function PaperConfig({ state }: { state: State }) {
   const dispatch = useContext(DispatchContext);
   const landscape = state.planOptions.paperSize.isLandscape;
   function setPaperSize(e: ChangeEvent) {
     const name = (e.target as HTMLInputElement).value;
     if (name !== "Custom") {
       const ps = PaperSize.standard[name][landscape ? "landscape" : "portrait"];
-      dispatch({type: "SET_PLAN_OPTION", value: {paperSize: ps}});
+      dispatch({ type: "SET_PLAN_OPTION", value: { paperSize: ps } });
     }
   }
   function setCustomPaperSize(x: number, y: number) {
-    dispatch({type: "SET_PLAN_OPTION", value: {paperSize: new PaperSize({x, y})}});
+    dispatch({ type: "SET_PLAN_OPTION", value: { paperSize: new PaperSize({ x, y }) } });
   }
-  const {paperSize} = state.planOptions;
+  const { paperSize } = state.planOptions;
   const paperSizeName = Object.keys(PaperSize.standard).find((psName) => {
     const ps = PaperSize.standard[psName].size;
     return (ps.x === paperSize.size.x && ps.y === paperSize.size.y)
       || (ps.y === paperSize.size.x && ps.x === paperSize.size.y);
   }) || "Custom";
+
+
   return <div>
     <select
       value={paperSizeName}
@@ -538,7 +541,7 @@ function PaperConfig({state}: {state: State}) {
       <SwapPaperSizesButton onClick={() => {
         dispatch({
           type: "SET_PLAN_OPTION",
-          value: {paperSize: paperSize.isLandscape ? paperSize.portrait : paperSize.landscape}
+          value: { paperSize: paperSize.isLandscape ? paperSize.portrait : paperSize.landscape }
         });
       }} />
       <label className="paper-label">
@@ -552,16 +555,16 @@ function PaperConfig({state}: {state: State}) {
     </div>
     <div>
       <label>
-      rotate drawing (degrees)
+        rotate drawing (degrees)
         <div className="horizontal-labels">
-          <img src={rotateDrawingIcon} alt="rotate drawing (degrees)"/>
+          <img src={rotateDrawingIcon} alt="rotate drawing (degrees)" />
           <input type="number" min="-90" step="90" max="360" placeholder="0" value={state.planOptions.rotateDrawing}
             onInput={(e) => {
               const value = (e.target as HTMLInputElement).value;
               if (Number(value) < 0) { (e.target as HTMLInputElement).value = "270"; }
               if (Number(value) > 270) { (e.target as HTMLInputElement).value = "0"; }
             }}
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {rotateDrawing: e.target.value}})}/>
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { rotateDrawing: e.target.value } })} />
         </div>
       </label>
     </div>
@@ -572,28 +575,50 @@ function PaperConfig({state}: {state: State}) {
         value={state.planOptions.marginMm}
         min="0"
         max={Math.min(paperSize.size.x / 2, paperSize.size.y / 2)}
-        onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {marginMm: Number(e.target.value)}})}
+        onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { marginMm: Number(e.target.value) } })}
       />
     </label>
   </div>;
 }
 
-function MotorControl({driver}: {driver: Driver}) {
+function DeviceConfig({ state }: { state: State }) {
+  const dispatch = useContext(DispatchContext);
+
+  function setDeviceOption(e: ChangeEvent) {
+    const name = (e.target as HTMLInputElement).value;
+    dispatch({ type: "SET_PLAN_OPTION", value: { deviceName: name } });
+  }
+
+  const { deviceName } = state.planOptions;
+
+  return <div>
+    <select
+      value={deviceName}
+      onChange={setDeviceOption}
+    >
+      {Object.values(DrawingDevice).map((name) =>
+        <option key={name}>{name}</option>
+      )}
+    </select>
+  </div>;
+}
+
+function MotorControl({ driver }: { driver: Driver }) {
   return <div>
     <button onClick={() => driver.limp()}>disengage motors</button>
   </div>;
 }
 
-function PlanStatistics({plan}: {plan: Plan}) {
+function PlanStatistics({ plan }: { plan: Plan }) {
   return <div className="duration">
     <div>Duration</div>
     <div><strong>{plan && plan.duration ? formatDuration(plan.duration()) : "-"}</strong></div>
   </div>;
 }
 
-function TimeLeft({plan, progress, currentMotionStartedTime, paused}: {
+function TimeLeft({ plan, progress, currentMotionStartedTime, paused }: {
   plan: Plan;
-  progress: number | null; 
+  progress: number | null;
   currentMotionStartedTime: Date | null;
   paused: boolean;
 }) {
@@ -625,9 +650,9 @@ function TimeLeft({plan, progress, currentMotionStartedTime, paused}: {
 }
 
 function PlanPreview(
-  {state, previewSize, plan}: {
+  { state, previewSize, plan }: {
     state: State;
-    previewSize: {width: number; height: number};
+    previewSize: { width: number; height: number };
     plan: Plan | null;
   }
 ) {
@@ -637,7 +662,7 @@ function PlanPreview(
   const memoizedPlanPreview = useMemo(() => {
     if (plan) {
       const palette = colorPathsByStrokeOrder
-        ? interpolator(colormap({colormap: 'spring'}))
+        ? interpolator(colormap({ colormap: 'spring' }))
         : () => 'rgba(0, 0, 0, 0.8)'
       const lines = plan.motions.map((m) => {
         if (m instanceof XYMotion) {
@@ -648,8 +673,8 @@ function PlanPreview(
         {lines.map((line, i) =>
           <path
             key={i}
-            d={line.reduce((m, {x, y}, j) => m + `${j === 0 ? "M" : "L"}${x} ${y}`, "")}
-            style={i % 2 === 0 ? {stroke: "rgba(0, 0, 0, 0.3)", strokeWidth: 0.5} : { stroke: palette(1 - i / lines.length), strokeWidth }}
+            d={line.reduce((m, { x, y }, j) => m + `${j === 0 ? "M" : "L"}${x} ${y}`, "")}
+            style={i % 2 === 0 ? { stroke: "rgba(0, 0, 0, 0.3)", strokeWidth: 0.5 } : { stroke: palette(1 - i / lines.length), strokeWidth }}
           />
         )}
       </g>;
@@ -659,9 +684,9 @@ function PlanPreview(
   // w/h of svg.
   // first try scaling so that h = area.h. if w < area.w, then ok.
   // otherwise, scale so that w = area.w.
-  const {width, height} = ps.size.x / ps.size.y * previewSize.height <= previewSize.width
-    ? {width: ps.size.x / ps.size.y * previewSize.height, height: previewSize.height}
-    : {height: ps.size.y / ps.size.x * previewSize.width, width: previewSize.width};
+  const { width, height } = ps.size.x / ps.size.y * previewSize.height <= previewSize.width
+    ? { width: ps.size.x / ps.size.y * previewSize.height, height: previewSize.height }
+    : { height: ps.size.y / ps.size.x * previewSize.width, width: previewSize.width };
 
   const [microprogress, setMicroprogress] = useState(0);
   useLayoutEffect(() => {
@@ -692,7 +717,7 @@ function PlanPreview(
     const pos = motion instanceof XYMotion
       ? motion.instant(Math.min(microprogress / 1000, motion.duration())).p
       : (plan.motion(state.progress - 1) as XYMotion).p2;
-    const {stepsPerMm} = Device.Axidraw;
+    const { stepsPerMm } = Device.Axidraw;
     const posXMm = pos.x / stepsPerMm;
     const posYMm = pos.y / stepsPerMm;
     progressIndicator =
@@ -709,11 +734,11 @@ function PlanPreview(
         <g>
           <path
             d={`M-${width} 0l${width * 2} 0M0 -${height}l0 ${height * 2}`}
-            style={{stroke: "rgba(222, 114, 114, 0.6)", strokeWidth: 1}}
+            style={{ stroke: "rgba(222, 114, 114, 0.6)", strokeWidth: 1 }}
           />
           <path
             d="M-10 0l20 0M0 -10l0 20"
-            style={{stroke: "rgba(222, 114, 114, 1)", strokeWidth: 2}}
+            style={{ stroke: "rgba(222, 114, 114, 1)", strokeWidth: 2 }}
           />
         </g>
       </svg>;
@@ -744,7 +769,7 @@ function PlanPreview(
 }
 
 function PlanLoader(
-  {isLoadingFile, isPlanning}: {
+  { isLoadingFile, isPlanning }: {
     isLoadingFile: boolean;
     isPlanning: boolean;
   }
@@ -758,7 +783,7 @@ function PlanLoader(
   return null;
 }
 
-function LayerSelector({state}: {state: State}) {
+function LayerSelector({ state }: { state: State }) {
   const dispatch = useContext(DispatchContext);
   const layers = state.planOptions.layerMode === 'group' ? state.groupLayers : state.strokeLayers
   const selectedLayers = state.planOptions.layerMode === 'group' ? state.planOptions.selectedGroupLayers : state.planOptions.selectedStrokeLayers
@@ -766,11 +791,11 @@ function LayerSelector({state}: {state: State}) {
   const layersChanged = state.planOptions.layerMode === 'group' ?
     (e: ChangeEvent) => {
       const selectedLayers = new Set([...(e.target as HTMLSelectElement).selectedOptions].map((o) => o.value));
-      dispatch({type: "SET_PLAN_OPTION", value: {selectedGroupLayers: selectedLayers}});
+      dispatch({ type: "SET_PLAN_OPTION", value: { selectedGroupLayers: selectedLayers } });
     } :
     (e: ChangeEvent) => {
       const selectedLayers = new Set([...(e.target as HTMLSelectElement).selectedOptions].map((o) => o.value));
-      dispatch({type: "SET_PLAN_OPTION", value: {selectedStrokeLayers: selectedLayers}});
+      dispatch({ type: "SET_PLAN_OPTION", value: { selectedStrokeLayers: selectedLayers } });
     };
   return <div>
     <label>
@@ -790,7 +815,7 @@ function LayerSelector({state}: {state: State}) {
 }
 
 function PlotButtons(
-  {state, plan, isPlanning, driver}: {
+  { state, plan, isPlanning, driver }: {
     state: State;
     plan: Plan | null;
     isPlanning: boolean;
@@ -845,14 +870,14 @@ function ResetToDefaultsButton() {
   const onClick = () => {
     // Clear all user settings that have been saved and reset to the defaults
     window.localStorage.removeItem("planOptions");
-    dispatch({type: "SET_PLAN_OPTION", value: {...defaultPlanOptions}});
+    dispatch({ type: "SET_PLAN_OPTION", value: { ...defaultPlanOptions } });
   };
 
   return <button className="button-link" onClick={onClick}>reset all options</button>;
 
 }
 
-function PlanOptions({state}: {state: State}) {
+function PlanOptions({ state }: { state: State }) {
   const dispatch = useContext(DispatchContext);
   return <div>
     <form>
@@ -860,7 +885,7 @@ function PlanOptions({state}: {state: State}) {
         <input
           type="checkbox"
           checked={state.planOptions.sortPaths}
-          onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {sortPaths: !!e.target.checked}})}
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { sortPaths: !!e.target.checked } })}
         />
         sort paths
       </label>
@@ -868,7 +893,7 @@ function PlanOptions({state}: {state: State}) {
         <input
           type="checkbox"
           checked={state.planOptions.layerMode === 'group'}
-          onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {layerMode: e.target.checked ? 'group' : 'stroke'}})}
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { layerMode: e.target.checked ? 'group' : 'stroke' } })}
         />
         layer by group
       </label>
@@ -876,7 +901,7 @@ function PlanOptions({state}: {state: State}) {
         <input
           type="checkbox"
           checked={state.planOptions.fitPage}
-          onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {fitPage: !!e.target.checked}})}
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { fitPage: !!e.target.checked } })}
         />
         fit page
       </label>
@@ -885,7 +910,7 @@ function PlanOptions({state}: {state: State}) {
           <input
             type="checkbox"
             checked={state.planOptions.cropToMargins}
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {cropToMargins: !!e.target.checked}})}
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { cropToMargins: !!e.target.checked } })}
           />
           crop to margins
         </label>
@@ -894,13 +919,13 @@ function PlanOptions({state}: {state: State}) {
     <div className="horizontal-labels">
 
       <label title="point-joining radius (mm)" >
-        <img src={pointJoinRadiusIcon} alt="point-joining radius (mm)"/>
+        <img src={pointJoinRadiusIcon} alt="point-joining radius (mm)" />
         <input
           type="number"
           value={state.planOptions.pointJoinRadius}
           step="0.1"
           min="0"
-          onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {pointJoinRadius: Number(e.target.value)}})}
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { pointJoinRadius: Number(e.target.value) } })}
         />
       </label>
       <label title="path-joining radius (mm)">
@@ -910,7 +935,7 @@ function PlanOptions({state}: {state: State}) {
           value={state.planOptions.pathJoinRadius}
           step="0.1"
           min="0"
-          onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {pathJoinRadius: Number(e.target.value)}})}
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { pathJoinRadius: Number(e.target.value) } })}
         />
       </label>
     </div>
@@ -922,7 +947,7 @@ function PlanOptions({state}: {state: State}) {
           value={state.planOptions.minimumPathLength}
           step="0.1"
           min="0"
-          onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {minimumPathLength: Number(e.target.value)}})}
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { minimumPathLength: Number(e.target.value) } })}
         />
       </label>
       <div className="flex">
@@ -933,7 +958,7 @@ function PlanOptions({state}: {state: State}) {
             value={state.planOptions.penDownAcceleration}
             step="0.1"
             min="0"
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {penDownAcceleration: Number(e.target.value)}})}
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { penDownAcceleration: Number(e.target.value) } })}
           />
         </label>
         <label title="Maximum velocity when the pen is down (in mm/s)">
@@ -943,7 +968,7 @@ function PlanOptions({state}: {state: State}) {
             value={state.planOptions.penDownMaxVelocity}
             step="0.1"
             min="0"
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {penDownMaxVelocity: Number(e.target.value)}})}
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { penDownMaxVelocity: Number(e.target.value) } })}
           />
         </label>
       </div>
@@ -954,7 +979,7 @@ function PlanOptions({state}: {state: State}) {
           value={state.planOptions.penDownCorneringFactor}
           step="0.01"
           min="0"
-          onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {penDownCorneringFactor: Number(e.target.value)}})}
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { penDownCorneringFactor: Number(e.target.value) } })}
         />
       </label>
       <div className="flex">
@@ -965,7 +990,7 @@ function PlanOptions({state}: {state: State}) {
             value={state.planOptions.penUpAcceleration}
             step="0.1"
             min="0"
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {penUpAcceleration: Number(e.target.value)}})}
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { penUpAcceleration: Number(e.target.value) } })}
           />
         </label>
         <label title="Maximum velocity when the pen is up (in mm/s)">
@@ -975,7 +1000,7 @@ function PlanOptions({state}: {state: State}) {
             value={state.planOptions.penUpMaxVelocity}
             step="0.1"
             min="0"
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {penUpMaxVelocity: Number(e.target.value)}})}
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { penUpMaxVelocity: Number(e.target.value) } })}
           />
         </label>
       </div>
@@ -987,7 +1012,7 @@ function PlanOptions({state}: {state: State}) {
             value={state.planOptions.penLiftDuration}
             step="0.01"
             min="0"
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {penLiftDuration: Number(e.target.value)}})}
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { penLiftDuration: Number(e.target.value) } })}
           />
         </label>
         <label title="How long the pen takes to drop (in seconds)">
@@ -997,7 +1022,7 @@ function PlanOptions({state}: {state: State}) {
             value={state.planOptions.penDropDuration}
             step="0.01"
             min="0"
-            onChange={(e) => dispatch({type: "SET_PLAN_OPTION", value: {penDropDuration: Number(e.target.value)}})}
+            onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { penDropDuration: Number(e.target.value) } })}
           />
         </label>
       </div>
@@ -1005,7 +1030,7 @@ function PlanOptions({state}: {state: State}) {
   </div>;
 }
 
-function PortSelector({driver, setDriver}: {driver: Driver; setDriver: (d: Driver) => void}) {
+function PortSelector({ driver, setDriver }: { driver: Driver; setDriver: (d: Driver) => void }) {
   const [initializing, setInitializing] = useState(false)
   useEffect(() => {
     (async () => {
@@ -1069,19 +1094,19 @@ function Root() {
   useEffect(() => {
     if (driver == null) return;
     driver.onprogress = (motionIdx: number) => {
-      dispatch({type: "SET_PROGRESS", motionIdx});
+      dispatch({ type: "SET_PROGRESS", motionIdx });
     };
     driver.oncancelled = driver.onfinished = () => {
-      dispatch({type: "SET_PROGRESS", motionIdx: null});
+      dispatch({ type: "SET_PROGRESS", motionIdx: null });
     };
     driver.onconnectionchange = (connected: boolean) => {
-      dispatch({type: "SET_CONNECTED", connected});
+      dispatch({ type: "SET_CONNECTED", connected });
     };
     driver.ondevinfo = (devInfo: DeviceInfo) => {
-      dispatch({type: "SET_DEVICE_INFO", value: devInfo});
+      dispatch({ type: "SET_DEVICE_INFO", value: devInfo });
     };
     driver.onpause = (paused: boolean) => {
-      dispatch({type: "SET_PAUSED", value: paused});
+      dispatch({ type: "SET_PAUSED", value: paused });
     };
     driver.onplan = (plan: Plan) => {
       setPlan(plan);
@@ -1148,6 +1173,9 @@ function Root() {
         </div>
         {IS_WEB ? <PortSelector driver={driver} setDriver={setDriver} /> : null}
         {!state.connected ? <div className="info-disconnected">disconnected</div> : null}
+        <div className="section-body">
+          <DeviceConfig state={state} />
+        </div>
         <div className="section-header">pen</div>
         <div className="section-body">
           <PenHeight state={state} driver={driver} />
@@ -1171,9 +1199,9 @@ function Root() {
           <div className="section-header">plot</div>
           <div className="section-body section-body__plot">
             <PlanStatistics plan={plan} />
-            <TimeLeft 
-              plan={plan} 
-              progress={state.progress} 
+            <TimeLeft
+              plan={plan}
+              progress={state.progress}
               currentMotionStartedTime={currentMotionStartedTime}
               paused={state.paused}
             />
@@ -1184,11 +1212,11 @@ function Root() {
       <div className="preview-area" ref={previewArea}>
         <PlanPreview
           state={state}
-          previewSize={{width: Math.max(0, previewSize.width - 40), height: Math.max(0, previewSize.height - 40)}}
+          previewSize={{ width: Math.max(0, previewSize.width - 40), height: Math.max(0, previewSize.height - 40) }}
           plan={plan}
         />
         <PlanLoader isPlanning={isPlanning} isLoadingFile={isLoadingFile} />
-        {showDragTarget ? <DragTarget/> : null}
+        {showDragTarget ? <DragTarget /> : null}
       </div>
     </div>
   </DispatchContext.Provider>;
@@ -1221,7 +1249,7 @@ function withSVG<T>(svgString: string, fn: (svg: SVGSVGElement) => T): T {
 
 function readSvg(svgString: string): Vec2[][] {
   return withSVG(svgString, flattenSVG).map((line) => {
-    const a = line.points.map(([x, y]: [number, number]) => ({x, y}));
+    const a = line.points.map(([x, y]: [number, number]) => ({ x, y }));
     (a as any).stroke = line.stroke;
     (a as any).groupId = line.groupId;
     return a;

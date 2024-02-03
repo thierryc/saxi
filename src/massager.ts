@@ -71,25 +71,26 @@ export function replan(inPaths: Vec2[][], planOptions: PlanOptions): Plan {
   }
 
   // Convert the paths to units of "steps".
-  paths = paths.map((ps) => ps.map((p) => vmul(p, Device.Axidraw.stepsPerMm)));
+  paths = paths.map((ps) => ps.map((p) => vmul(p, Device[planOptions.deviceName].stepsPerMm)));
 
   // And finally, motion planning.
   console.time("planning pen motions");
   const plan = Planning.plan(paths, {
-    penUpPos: Device.Axidraw.penPctToPos(planOptions.penUpHeight),
-    penDownPos: Device.Axidraw.penPctToPos(planOptions.penDownHeight),
+    penUpPos: Device[planOptions.deviceName].penPctToPos(planOptions.penUpHeight),
+    penDownPos: Device[planOptions.deviceName].penPctToPos(planOptions.penDownHeight),
     penDownProfile: {
-      acceleration: planOptions.penDownAcceleration * Device.Axidraw.stepsPerMm,
-      maximumVelocity: planOptions.penDownMaxVelocity * Device.Axidraw.stepsPerMm,
-      corneringFactor: planOptions.penDownCorneringFactor * Device.Axidraw.stepsPerMm,
+      acceleration: planOptions.penDownAcceleration * Device[planOptions.deviceName].stepsPerMm,
+      maximumVelocity: planOptions.penDownMaxVelocity * Device[planOptions.deviceName].stepsPerMm,
+      corneringFactor: planOptions.penDownCorneringFactor * Device[planOptions.deviceName].stepsPerMm,
     },
     penUpProfile: {
-      acceleration: planOptions.penUpAcceleration * Device.Axidraw.stepsPerMm,
-      maximumVelocity: planOptions.penUpMaxVelocity * Device.Axidraw.stepsPerMm,
+      acceleration: planOptions.penUpAcceleration * Device[planOptions.deviceName].stepsPerMm,
+      maximumVelocity: planOptions.penUpMaxVelocity * Device[planOptions.deviceName].stepsPerMm,
       corneringFactor: 0,
     },
     penDropDuration: planOptions.penDropDuration,
     penLiftDuration: planOptions.penLiftDuration,
+    deviceName: planOptions.deviceName,
   });
   console.timeEnd("planning pen motions");
 

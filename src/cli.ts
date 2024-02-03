@@ -6,7 +6,7 @@ import * as fs from "fs";
 import {flattenSVG} from "flatten-svg";
 import { Vec2 } from "./vec";
 import { formatDuration } from "./util";
-import { PlanOptions, defaultPlanOptions } from "./planning";
+import { PlanOptions, defaultPlanOptions, DrawingDevice } from "./planning";
 import { PaperSize } from "./paper-size";
 
 function parseSvg(svg: string) {
@@ -42,6 +42,13 @@ export function cli(argv: string[]): void {
         .option("firmware-version", {
           describe: "print the device's firmware version and exit",
           type: "boolean"
+        })
+        .option("device-name", {
+          describe: "device name",
+          choices: Object.values(DrawingDevice),
+          // demandOption: true,
+          type: "string",
+          default: defaultPlanOptions.deviceName
         }),
       args => {
         if (args["firmware-version"]) {
@@ -230,6 +237,7 @@ export function cli(argv: string[]): void {
           minimumPathLength: args["minimum-path-length"],
           pathJoinRadius: args["path-join-radius"],
           pointJoinRadius: args["point-join-radius"],
+          deviceName: DrawingDevice.Axidraw,
         }
         const p = replan(linesToVecs(lines), planOptions)
         console.log(`${p.motions.length} motions, estimated duration: ${formatDuration(p.duration())}`)
