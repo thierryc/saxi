@@ -118,7 +118,7 @@ class WebSerialDriver implements Driver {
   private _signalUnpause: () => void = null;
   private _cancelRequested = false;
 
-  public static async connect(port?: SerialPort) {
+  public static async connect(port?: SerialPort, deviceName: DrawingDevice = DrawingDevice.Axidraw) {
     if (!port)
       port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x04D8, usbProductId: 0xFD92 }] })
     // baudRate ref: https://github.com/evil-mad/plotink/blob/a45739b7d41b74d35c1e933c18949ed44c72de0e/plotink/ebb_serial.py#L281
@@ -127,7 +127,7 @@ class WebSerialDriver implements Driver {
     // (pyserial defaults to 9600)
     await port.open({ baudRate: 9600 })
     const { usbVendorId, usbProductId } = port.getInfo()
-    return new WebSerialDriver(new EBB(port), `${usbVendorId.toString(16).padStart(4, '0')}:${usbProductId.toString(16).padStart(4, '0')}`)
+    return new WebSerialDriver(new EBB(port), `${usbVendorId.toString(16).padStart(4, '0')}:${usbProductId.toString(16).padStart(4, '0')}`, deviceName)
   }
 
   private _name: string
@@ -136,9 +136,11 @@ class WebSerialDriver implements Driver {
   }
 
   private ebb: EBB
-  private constructor(ebb: EBB, name: string) {
+  private _deviceName: DrawingDevice 
+  private constructor(ebb: EBB, name: string, deviceName: DrawingDevice = DrawingDevice.Axidraw) {
     this.ebb = ebb
     this._name = name
+    this._deviceName = deviceName
   }
 
   public close(): Promise<void> {
@@ -168,7 +170,7 @@ class WebSerialDriver implements Driver {
     }
 
     if (this._cancelRequested) {
-      await this.ebb.setPenHeight(Device[state.planOptions.deviceName].penPctToPos(0), 1000);
+      await this.ebb.setPenHeight(Device[this._deviceName].penPctToPos(0), 1000);
       if (this.oncancelled) this.oncancelled()
     } else {
       if (this.onfinished) this.onfinished()
@@ -588,7 +590,6 @@ function DeviceConfig({ state }: { state: State }) {
     const deviceName = (e.target as HTMLInputElement).value as DrawingDevice;
     if (dispatch !== null) {
       dispatch({ type: "SET_PLAN_OPTION", value: { deviceName } });
-      console.log(state.planOptions);
     }
   }
   const { deviceName } = state.planOptions;

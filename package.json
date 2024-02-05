@@ -29,7 +29,8 @@
     "dev": "tsc && webpack --mode=development -w & node cli.js",
     "deploy": "rimraf dist/ui && IS_WEB=1 webpack --mode=production && gh-pages -d dist/ui",
     "test": "jest",
-    "xaxi": "node cli.js -- --device 'Xylodraw'"
+    "saxi": "node cli.js",
+    "xaxi": "node cli.js --device-name 'Xylodraw'"
   },
   "author": "Jeremy Rose <nornagon@nornagon.net>",
   "license": "AGPL-3.0-only",
