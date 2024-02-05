@@ -168,7 +168,7 @@ class WebSerialDriver implements Driver {
     }
 
     if (this._cancelRequested) {
-      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(0), 1000);
+      await this.ebb.setPenHeight(Device[state.planOptions.deviceName].penPctToPos(0), 1000);
       if (this.oncancelled) this.oncancelled()
     } else {
       if (this.onfinished) this.onfinished()
@@ -425,11 +425,11 @@ function PenHeight({ state, driver }: { state: State; driver: Driver }) {
   const setPenUpHeight = (x: number) => dispatch({ type: "SET_PLAN_OPTION", value: { penUpHeight: x } });
   const setPenDownHeight = (x: number) => dispatch({ type: "SET_PLAN_OPTION", value: { penDownHeight: x } });
   const penUp = () => {
-    const height = Device.Axidraw.penPctToPos(penUpHeight);
+    const height = Device[state.planOptions.deviceName].penPctToPos(penUpHeight);
     driver.setPenHeight(height, 1000);
   };
   const penDown = () => {
-    const height = Device.Axidraw.penPctToPos(penDownHeight);
+    const height = Device[state.planOptions.deviceName].penPctToPos(penDownHeight);
     driver.setPenHeight(height, 1000);
   };
   return <Fragment>
@@ -585,10 +585,12 @@ function DeviceConfig({ state }: { state: State }) {
   const dispatch = useContext(DispatchContext);
 
   function setDeviceOption(e: ChangeEvent) {
-    const name = (e.target as HTMLInputElement).value;
-    dispatch({ type: "SET_PLAN_OPTION", value: { deviceName: name } });
+    const deviceName = (e.target as HTMLInputElement).value as DrawingDevice;
+    if (dispatch !== null) {
+      dispatch({ type: "SET_PLAN_OPTION", value: { deviceName } });
+      console.log(state.planOptions);
+    }
   }
-
   const { deviceName } = state.planOptions;
 
   return <div>
@@ -657,7 +659,7 @@ function PlanPreview(
   }
 ) {
   const ps = state.planOptions.paperSize;
-  const strokeWidth = state.visualizationOptions.penStrokeWidth * Device.Axidraw.stepsPerMm
+  const strokeWidth = state.visualizationOptions.penStrokeWidth * Device[state.planOptions.deviceName].stepsPerMm
   const colorPathsByStrokeOrder = state.visualizationOptions.colorPathsByStrokeOrder
   const memoizedPlanPreview = useMemo(() => {
     if (plan) {
@@ -669,7 +671,7 @@ function PlanPreview(
           return m.blocks.map((b) => b.p1).concat([m.p2]);
         } else { return []; }
       }).filter((m) => m.length);
-      return <g transform={`scale(${1 / Device.Axidraw.stepsPerMm})`}>
+      return <g transform={`scale(${1 / Device[state.planOptions.deviceName].stepsPerMm})`}>
         {lines.map((line, i) =>
           <path
             key={i}
@@ -717,7 +719,7 @@ function PlanPreview(
     const pos = motion instanceof XYMotion
       ? motion.instant(Math.min(microprogress / 1000, motion.duration())).p
       : (plan.motion(state.progress - 1) as XYMotion).p2;
-    const { stepsPerMm } = Device.Axidraw;
+    const { stepsPerMm } = Device[state.planOptions.deviceName]; // 
     const posXMm = pos.x / stepsPerMm;
     const posYMm = pos.y / stepsPerMm;
     progressIndicator =

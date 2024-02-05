@@ -74,7 +74,6 @@ export class EBB {
     if (process.env.DEBUG_SAXI_COMMANDS) {
       console.log(`writing: ${str}`)
     }
-    console.log(`writing: ${str}`)
     const encoder = new TextEncoder()
     return this.writer.write(encoder.encode(str))
   }
