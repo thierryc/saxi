@@ -97,7 +97,7 @@ interface ToolingProfile {
 
 export const Device = {
   Axidraw: {
-    stepsPerMm: 5,
+    stepsPerMm: 1.25 * 5, // 5
 
     // Practical min/max that you might ever want the pen servo to go on the AxiDraw (v2)
     // Units: 83ns resolution pwm output.
@@ -112,7 +112,6 @@ export const Device = {
   },
   Xylodraw: {
     stepsPerMm: 1.25 * 5,
-
     // Practical min/max that you might ever want the pen servo to go on the AxiDraw (v2)
     // Units: 83ns resolution pwm output.
     // Defaults: penup at 12000 (1ms), pendown at 16000 (1.33ms).

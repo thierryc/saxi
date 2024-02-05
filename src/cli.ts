@@ -62,7 +62,7 @@ export function cli(argv: string[]): void {
             await ebb.close();
           });
         } else {
-          startServer(args.port, args.device, args["enable-cors"], args["max-payload-size"]);
+          startServer(args.port, args.device, args["enable-cors"], args["max-payload-size"], args["device-name"]);
         }
       }
     )
@@ -237,7 +237,7 @@ export function cli(argv: string[]): void {
           minimumPathLength: args["minimum-path-length"],
           pathJoinRadius: args["path-join-radius"],
           pointJoinRadius: args["point-join-radius"],
-          deviceName: DrawingDevice.Axidraw,
+          deviceName: args["device-name"] as DrawingDevice,
         }
         const p = replan(linesToVecs(lines), planOptions)
         console.log(`${p.motions.length} motions, estimated duration: ${formatDuration(p.duration())}`)

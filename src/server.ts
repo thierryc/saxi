@@ -8,11 +8,11 @@ import { WakeLock } from "wake-lock";
 import WebSocket from "ws";
 import { SerialPortSerialPort } from "./serialport-serialport";
 import { EBB } from "./ebb";
-import { Device, PenMotion, Motion, Plan } from "./planning";
+import { Device, PenMotion, Motion, Plan, DrawingDevice } from "./planning";
 import { formatDuration } from "./util";
 import { autoDetect } from '@serialport/bindings-cpp';
 
-export function startServer(port: number, device: string | null = null, enableCors = false, maxPayloadSize = "200mb") {
+export function startServer(port: number, device: string | null = null, enableCors = false, maxPayloadSize = "200mb", deviceName: DrawingDevice = DrawingDevice.Axidraw) {
   const app = express();
 
   app.use("/", express.static(path.join(__dirname, "..", "ui")));
@@ -161,8 +161,9 @@ export function startServer(port: number, device: string | null = null, enableCo
     async executeMotion(motion: Motion, _progress: [number, number]): Promise<void> {
       await ebb.executeMotion(motion);
     },
+
     async postCancel(): Promise<void> {
-      await ebb.setPenHeight(Device.Axidraw.penPctToPos(0), 1000);
+      await ebb.setPenHeight(Device[deviceName].penPctToPos(0), 1000);
     },
     async postPlot(): Promise<void> {
       await ebb.waitUntilMotorsIdle();
