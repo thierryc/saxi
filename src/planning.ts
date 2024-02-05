@@ -97,8 +97,7 @@ interface ToolingProfile {
 
 export const Device = {
   Axidraw: {
-    stepsPerMm: 1.25 * 5, // 5
-
+    stepsPerMm: 5, // 20 teeth pulley 200 steps per rotation, 1.8deg angle.
     // Practical min/max that you might ever want the pen servo to go on the AxiDraw (v2)
     // Units: 83ns resolution pwm output.
     // Defaults: penup at 12000 (1ms), pendown at 16000 (1.33ms).
@@ -111,7 +110,7 @@ export const Device = {
     }
   },
   Xylodraw: {
-    stepsPerMm: 1.25 * 5,
+    stepsPerMm: 6.25, // 16 teeth pulley 200 steps per rotation, 1.8deg angle.
     // Practical min/max that you might ever want the pen servo to go on the AxiDraw (v2)
     // Units: 83ns resolution pwm output.
     // Defaults: penup at 12000 (1ms), pendown at 16000 (1.33ms).
