@@ -186,6 +186,12 @@ export function cli(argv: string[]): void {
           type: "number",
           default: defaultPlanOptions.pathJoinRadius
         })
+        .option("cut-path-into-segments", {
+          describe: "cut-path-into-segments (in mm)",
+          type: "number",
+          default: defaultPlanOptions.cutPathIntoSegments
+        })
+        
         .option("rotate-drawing", {
           describe: "Rotate drawing (in degrees)",
           type: "number",
@@ -238,6 +244,7 @@ export function cli(argv: string[]): void {
           pathJoinRadius: args["path-join-radius"],
           pointJoinRadius: args["point-join-radius"],
           deviceName: args["device-name"] as DrawingDevice,
+          cutPathIntoSegments: args["cut-path-into-segments"],
         }
         const p = replan(linesToVecs(lines), planOptions)
         console.log(`${p.motions.length} motions, estimated duration: ${formatDuration(p.duration())}`)

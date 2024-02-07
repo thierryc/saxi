@@ -11,6 +11,7 @@ export enum DrawingDevice {
 }
 
 export interface PlanOptions {
+  
   paperSize: PaperSize;
   marginMm: number;
   selectedStrokeLayers: Set<string>;
@@ -38,6 +39,7 @@ export interface PlanOptions {
   cropToMargins: boolean;
 
   minimumPathLength: number;
+  cutPathIntoSegments: number;
   deviceName: DrawingDevice;
 }
 
@@ -68,6 +70,7 @@ export const defaultPlanOptions: PlanOptions = {
   cropToMargins: true,
 
   minimumPathLength: 0,
+  cutPathIntoSegments: 0,
   deviceName: DrawingDevice.Axidraw,
 };
 
@@ -606,6 +609,8 @@ export function plan(
   const penMaxUpPos = profile.penUpPos < profile.penDownPos ? 100 : 0
   // for each path: move to the initial point, put the pen down, draw the path,
   // then pick the pen up.
+  console.log(`plan paths lenght ${paths.length}`);
+  
   paths.forEach((p, i) => {
     const m = constantAccelerationPlan(p, profile.penDownProfile);
     const penUpPos = i === paths.length - 1 ? Device[profile.deviceName].penPctToPos(penMaxUpPos) : profile.penUpPos;

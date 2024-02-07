@@ -110,6 +110,8 @@ export function startServer(port: number, device: string | null = null, enableCo
   });
 
   app.post("/cancel", (req, res) => {
+    console.log(`Received a cancel request`);
+    // TODO goto x0 y0. 
     cancelRequested = true;
     if (unpaused) {
       signalUnpause();
@@ -119,6 +121,7 @@ export function startServer(port: number, device: string | null = null, enableCo
   });
 
   app.post("/pause", (req, res) => {
+    console.log(`Received a pause request`);
     if (!unpaused) {
       unpaused = new Promise(resolve => {
         signalUnpause = resolve;
@@ -129,6 +132,7 @@ export function startServer(port: number, device: string | null = null, enableCo
   });
 
   app.post("/resume", (req, res) => {
+    console.log(`Received a pause request`);
     if (signalUnpause) {
       signalUnpause();
       signalUnpause = unpaused = null;
