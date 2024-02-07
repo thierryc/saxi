@@ -127,4 +127,9 @@ export class SerialPortSerialPort extends EventEmitter implements SerialPort {
   public dispatchEvent(event: Event): boolean {
     return this.emit(event.type)
   }
+
+  public forget(): Promise<void> {
+    return Promise.resolve();
+  }
+  
 }
