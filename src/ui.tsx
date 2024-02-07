@@ -953,6 +953,17 @@ function PlanOptions({ state }: { state: State }) {
           onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { minimumPathLength: Number(e.target.value) } })}
         />
       </label>
+      <label title="cut Path Into Segments (length in svg unit)">
+        cut path into segments (length in svg unit) 
+        <input
+          type="number"
+          value={state.planOptions.cutPathIntoSegments}
+          step="1"
+          min="0"
+          onChange={(e) => dispatch({ type: "SET_PLAN_OPTION", value: { cutPathIntoSegments: Number(e.target.value) } })}
+        />
+      </label>
+      
       <div className="flex">
         <label title="Acceleration when the pen is down (in mm/s^2)">
           down acc. (mm/s<sup>2</sup>)

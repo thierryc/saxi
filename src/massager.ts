@@ -3,6 +3,8 @@ import * as Planning from "./planning";
 import {Device, Plan, PlanOptions} from "./planning";
 import {dedupPoints, scaleToPaper, cropToMargins} from "./util";
 import {Vec2, vmul, vrot} from "./vec";
+import { cutPathIntoSegments } from './cutPathIntoSegments';
+import { log } from "console";
 
 // CSS, and thus SVG, defines 1px = 1/96th of 1in
 // https://www.w3.org/TR/css-values-4/#absolute-lengths
@@ -73,6 +75,20 @@ export function replan(inPaths: Vec2[][], planOptions: PlanOptions): Plan {
   // Convert the paths to units of "steps".
   paths = paths.map((ps) => ps.map((p) => vmul(p, Device[planOptions.deviceName].stepsPerMm)));
 
+  if (planOptions.cutPathIntoSegments > 0) {
+    console.log("paths", paths.length);
+    console.time("cut path into segments");
+    paths = paths.reduce((acc, path) => {
+      const segments: Vec2[][] = cutPathIntoSegments(path, planOptions.cutPathIntoSegments);
+      return [...acc, ...segments]
+    }, [] as any);
+    console.timeEnd("cut path into segments");
+    console.log("segments", paths.length);
+    console.log(paths);
+
+    
+  }
+
   // And finally, motion planning.
   console.time("planning pen motions");
   const plan = Planning.plan(paths, {
@@ -92,7 +108,8 @@ export function replan(inPaths: Vec2[][], planOptions: PlanOptions): Plan {
     penLiftDuration: planOptions.penLiftDuration,
     deviceName: planOptions.deviceName,
   });
+ 
   console.timeEnd("planning pen motions");
-
   return plan;
 }
+
